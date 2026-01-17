@@ -189,10 +189,9 @@ export async function return404(url) {
 export async function returnBlockImg(url) {
     const blockImg = await fetch(url.origin + "/static/BlockImg.png");
     if (!blockImg.ok) {
-        return new Response(null, {
-            status: 302,
+        return new Response("Access Denied: Blocked Image", {
+            status: 403,
             headers: {
-                "Location": url.origin + "/blockimg",
                 "Cache-Control": "public, max-age=86400"
             }
         })
@@ -211,10 +210,9 @@ export async function returnBlockImg(url) {
 export async function returnWhiteListImg(url) {
     const WhiteListImg = await fetch(url.origin + "/static/WhiteListOn.png");
     if (!WhiteListImg.ok) {
-        return new Response(null, {
-            status: 302,
+        return new Response("Access Denied: WhiteList Mode Enabled", {
+            status: 403,
             headers: {
-                "Location": url.origin + "/whiteliston",
                 "Cache-Control": "public, max-age=86400"
             }
         })
