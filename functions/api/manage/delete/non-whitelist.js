@@ -17,6 +17,7 @@ export async function onRequest(context) {
     const includeTags = splitTags(url.searchParams.get('includeTags'));
     const excludeTags = splitTags(url.searchParams.get('excludeTags'));
     const channel = url.searchParams.get('channel') || 'TelegramNew';
+    const batchSize = Math.min(parsePositiveInt(url.searchParams.get('batchSize'), 20), 50);
 
     try {
         const result = await readIndex(context, {
@@ -35,10 +36,11 @@ export async function onRequest(context) {
         }
 
         const targets = result.files.filter(file => file.metadata?.ListType !== 'White');
+        const batchTargets = targets.slice(0, batchSize);
         const deletedFiles = [];
         const failedFiles = [];
 
-        for (const file of targets) {
+        for (const file of batchTargets) {
             const fileId = file.id;
             const cdnUrl = `https://${url.hostname}/file/${fileId}`;
             const success = await deleteManagedFile(env, fileId, cdnUrl, url);
@@ -60,8 +62,12 @@ export async function onRequest(context) {
             dir,
             search,
             scanned: result.files.length,
+            batchSize,
+            matchedCount: targets.length,
             deletedCount: deletedFiles.length,
             failedCount: failedFiles.length,
+            hasMore: targets.length > batchTargets.length,
+            remainingCount: Math.max(0, targets.length - batchTargets.length),
             deleted: deletedFiles,
             failed: failedFiles
         }), {
@@ -77,6 +83,11 @@ export async function onRequest(context) {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
     }
+}
+
+function parsePositiveInt(value, fallbackValue) {
+    const parsed = parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackValue;
 }
 
 function splitTags(value) {
