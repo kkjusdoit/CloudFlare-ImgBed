@@ -4,6 +4,7 @@ import { removeFileFromIndex, batchRemoveFilesFromIndex } from "../../../utils/i
 import { getDatabase } from '../../../utils/databaseAdapter.js';
 import { DiscordAPI } from '../../../utils/discordAPI.js';
 import { HuggingFaceAPI } from '../../../utils/huggingfaceAPI.js';
+import { TelegramAPI } from '../../../utils/telegramAPI.js';
 
 // CORS 跨域响应头
 const corsHeaders = {
@@ -47,7 +48,7 @@ export async function onRequest(context) {
                     const fileId = file.name;
                     const cdnUrl = `https://${url.hostname}/file/${fileId}`;
 
-                    const success = await deleteFile(env, fileId, cdnUrl, url);
+                    const success = await deleteManagedFile(env, fileId, cdnUrl, url);
                     if (success) {
                         deletedFiles.push(fileId);
                     } else {
@@ -95,7 +96,7 @@ export async function onRequest(context) {
         const fileId = params.path.split(',').join('/');
         const cdnUrl = `https://${url.hostname}/file/${fileId}`;
 
-        const success = await deleteFile(env, fileId, cdnUrl, url);
+        const success = await deleteManagedFile(env, fileId, cdnUrl, url);
         if (!success) {
             throw new Error('Delete file failed');
         } else {
@@ -121,7 +122,7 @@ export async function onRequest(context) {
 }
 
 // 删除单个文件的核心函数
-async function deleteFile(env, fileId, cdnUrl, url) {
+export async function deleteManagedFile(env, fileId, cdnUrl, url) {
     try {
         // 读取图片信息
         const db = getDatabase(env);
@@ -147,6 +148,15 @@ async function deleteFile(env, fileId, cdnUrl, url) {
         // Discord 渠道的图片，需要删除 Discord 中对应的消息
         if (img.metadata?.Channel === 'Discord') {
             await deleteDiscordFile(img);
+        }
+
+        // Telegram 渠道的图片，需要删除 Telegram 中对应的消息
+        if (img.metadata?.Channel === 'TelegramNew') {
+            const telegramDeleteResult = await deleteTelegramFile(img);
+            if (!telegramDeleteResult.success && !telegramDeleteResult.skipped) {
+                console.error('Telegram message deletion failed, aborting local delete');
+                return false;
+            }
         }
 
         // HuggingFace 渠道的图片，需要删除 HuggingFace 中对应的文件
@@ -208,6 +218,48 @@ async function deleteS3File(img) {
     }
 }
 
+// 删除 Telegram 渠道的图片（删除 Telegram 消息）
+async function deleteTelegramFile(img) {
+    const metadata = img.metadata || {};
+    const botToken = metadata.TgBotToken;
+    const chatId = metadata.TgChatId;
+    const proxyUrl = metadata.TgProxyUrl || '';
+
+    if (!botToken || !chatId) {
+        console.warn('Telegram file missing required metadata for deletion');
+        return { success: false, skipped: true };
+    }
+
+    const telegramAPI = new TelegramAPI(botToken, proxyUrl);
+
+    try {
+        if (metadata.IsChunked) {
+            const chunks = parseChunkRecords(img.value);
+            const messageIds = chunks
+                .map(chunk => chunk.messageId)
+                .filter(messageId => messageId !== undefined && messageId !== null && messageId !== '');
+
+            if (messageIds.length === 0) {
+                console.warn('Chunked Telegram file missing message IDs, skip Telegram message deletion');
+                return { success: false, skipped: true };
+            }
+
+            const results = await Promise.all(messageIds.map(messageId => telegramAPI.deleteMessage(chatId, messageId)));
+            return { success: results.every(Boolean), skipped: false };
+        }
+
+        if (!metadata.TgMessageId) {
+            console.warn('Telegram file missing message ID, skip Telegram message deletion');
+            return { success: false, skipped: true };
+        }
+
+        return { success: await telegramAPI.deleteMessage(chatId, metadata.TgMessageId), skipped: false };
+    } catch (error) {
+        console.error('Telegram Delete Failed:', error);
+        return { success: false, skipped: false };
+    }
+}
+
 // 删除 Discord 渠道的图片（删除 Discord 消息）
 async function deleteDiscordFile(img) {
     const botToken = img.metadata?.DiscordBotToken;
@@ -229,6 +281,20 @@ async function deleteDiscordFile(img) {
     } catch (error) {
         console.error("Discord Delete Failed:", error);
         return false;
+    }
+}
+
+function parseChunkRecords(value) {
+    if (!value) {
+        return [];
+    }
+
+    try {
+        const chunks = JSON.parse(value);
+        return Array.isArray(chunks) ? chunks : [];
+    } catch (error) {
+        console.error('Failed to parse chunk records for delete:', error);
+        return [];
     }
 }
 

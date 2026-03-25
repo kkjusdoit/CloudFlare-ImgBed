@@ -603,6 +603,7 @@ async function uploadSingleChunkToTelegram(context, chunkData, chunkIndex, total
         return {
             success: true,
             fileId: chunkInfo.file_id,
+            messageId: chunkInfo.message_id,
             size: chunkInfo.file_size,
             fileName: chunkFileName,
             uploadTime: Date.now(),
@@ -1166,6 +1167,7 @@ export async function forceCleanupUpload(context, uploadId, totalChunks) {
 export async function uploadLargeFileToTelegram(context, file, fullId, metadata, fileName, fileType, returnLink, tgBotToken, tgChatId, tgChannel) {
     const { env, waitUntil } = context;
     const db = getDatabase(env);
+    const tgProxyUrl = tgChannel.proxyUrl || '';
 
     const CHUNK_SIZE = 16 * 1024 * 1024; // 16MB (TG Bot getFile download limit: 20MB, leave 4MB safety margin)
     const fileSize = file.size;
@@ -1193,6 +1195,7 @@ export async function uploadLargeFileToTelegram(context, file, fullId, metadata,
             const chunkInfo = await uploadChunkToTelegramWithRetry(
                 tgBotToken,
                 tgChatId,
+                tgProxyUrl,
                 chunkBlob,
                 chunkFileName,
                 i,
@@ -1211,6 +1214,7 @@ export async function uploadLargeFileToTelegram(context, file, fullId, metadata,
             chunks.push({
                 index: i,
                 fileId: chunkInfo.file_id,
+                messageId: chunkInfo.message_id,
                 size: chunkInfo.file_size,
                 fileName: chunkFileName
             });
@@ -1228,6 +1232,9 @@ export async function uploadLargeFileToTelegram(context, file, fullId, metadata,
         metadata.ChannelName = tgChannel.name;
         metadata.TgChatId = tgChatId;
         metadata.TgBotToken = tgBotToken;
+        if (tgChannel.proxyUrl) {
+            metadata.TgProxyUrl = tgChannel.proxyUrl;
+        }
         metadata.IsChunked = true;
         metadata.TotalChunks = totalChunks;
         metadata.FileSize = (fileSize / 1024 / 1024).toFixed(2);

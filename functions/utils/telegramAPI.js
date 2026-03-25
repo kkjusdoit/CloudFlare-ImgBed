@@ -61,6 +61,7 @@ export class TelegramAPI {
             file_id: file.file_id,
             file_name: file.file_name || file.file_unique_id,
             file_size: file.file_size,
+            message_id: responseData.result?.message_id,
         });
 
         try {
@@ -137,6 +138,44 @@ export class TelegramAPI {
         });
 
         return response;
+    }
+
+    /**
+     * 删除聊天中的消息
+     * @param {string} chatId - 聊天ID
+     * @param {number|string} messageId - 消息ID
+     * @returns {Promise<boolean>} 是否删除成功
+     */
+    async deleteMessage(chatId, messageId) {
+        try {
+            const response = await fetch(`${this.baseURL}/deleteMessage`, {
+                method: 'POST',
+                headers: {
+                    ...this.defaultHeaders,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    message_id: Number(messageId)
+                })
+            });
+
+            if (!response.ok) {
+                console.error('Telegram deleteMessage error:', response.status, response.statusText);
+                return false;
+            }
+
+            const responseData = await response.json();
+            if (!responseData.ok) {
+                console.error('Telegram deleteMessage API error:', responseData.description);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Telegram deleteMessage failed:', error);
+            return false;
+        }
     }
 
 }

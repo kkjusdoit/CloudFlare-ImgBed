@@ -525,6 +525,7 @@ async function uploadFileToTelegram(context, fullId, metadata, fileExt, fileName
             metadata.ChannelName = tgChannel.name;
 
             metadata.TgFileId = id;
+            metadata.TgMessageId = fileInfo.message_id;
             metadata.TgChatId = tgChatId;
             metadata.TgBotToken = tgBotToken;
             // 保存代理域名配置
