@@ -126,6 +126,12 @@
 
 # 4. Tips
 
+- **默认自动白名单**：当前版本在未显式关闭时，会让新上传文件默认写入 `ListType: "White"`，这样在开启 `whiteListMode` 时也能直接访问新文件。
+
+- **回退方式**：如果后续想恢复“新上传默认不进白名单”，可以任选其一：
+  - 在管理端 `系统设置` 中将 `autoWhiteListOnUpload` 显式设为 `false`
+  - 或在部署环境变量中设置 `Auto_WhiteList_On_Upload=false`
+
 - **前端开源**：参见[MarSeventh/Sanyue-ImgHub](https://github.com/MarSeventh/Sanyue-ImgHub)项目。
 
 - **生态建设**：欢迎社区参与生态建设，欢迎提交 PR 或者 Issue，优质内容参见[官网生态建设页面](https://cfbed.sanyue.de/about/ecosystem.html)。
@@ -155,4 +161,3 @@
   <a href="https://www.cloudflare.com"><img src="static/readme/cloudflare-logo.png" alt="Cloudflare Logo" height="25"></a> <a href="https://edgeone.ai/?from=github"><img src="https://edgeone.ai/media/34fe3a45-492d-4ea4-ae5d-ea1087ca7b4b.png" alt="Tencent Logo" height="25"></a>
 
 - **[速维云](https://www.svyun.com/recommend/AELZ0UeMz8K11Zg7pEXC)**：提供-云计算服务资源支持
-

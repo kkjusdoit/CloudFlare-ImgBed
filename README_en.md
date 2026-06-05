@@ -115,6 +115,12 @@ Provides detailed deployment documentation, feature docs, development plans, upd
 
 # 4. Tips
 
+- **Auto-whitelist by default**: In the current version, unless you explicitly turn it off, new uploads are written with `ListType: "White"` so they remain directly accessible even when `whiteListMode` is enabled.
+
+- **Rollback options**: If you want to go back to “new uploads are not whitelisted by default”, use either of these:
+  - Explicitly set `autoWhiteListOnUpload` to `false` in Admin Panel -> System Settings
+  - Or set the deployment environment variable `Auto_WhiteList_On_Upload=false`
+
 - Frontend is open source, see [MarSeventh/Sanyue-ImgHub](https://github.com/MarSeventh/Sanyue-ImgHub).
 
 - **Ecosystem**: We welcome community participation in the ecosystem construction. Feel free to submit PRs or Issues, and high-quality content can be found on the [official ecosystem page](https://cfbed.sanyue.de/en/about/ecosystem.html).
