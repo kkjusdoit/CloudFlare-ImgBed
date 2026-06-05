@@ -84,6 +84,7 @@ export async function getSecurityConfig(db, env) {
     const access = {
         allowedDomains: kvAccess.allowedDomains || env.ALLOWED_DOMAINS || '',
         whiteListMode: kvAccess.whiteListMode ?? env.WhiteList_Mode === 'true',
+        autoWhiteListOnUpload: kvAccess.autoWhiteListOnUpload ?? env.Auto_WhiteList_On_Upload === 'true',
     }
     settings.access = access
 

@@ -75,6 +75,7 @@ export async function onRequest(context) {  // Contents of context object
 // 通用文件上传处理函数
 async function processFileUpload(context, formdata = null) {
     const { request, url } = context;
+    const autoWhiteListOnUpload = context.securityConfig?.access?.autoWhiteListOnUpload === true;
 
     // 解析表单数据
     formdata = formdata || await request.formData();
@@ -150,7 +151,7 @@ async function processFileUpload(context, formdata = null) {
         FileSize: fileSize,
         UploadIP: uploadIp,
         UploadAddress: ipAddress,
-        ListType: "None",
+        ListType: autoWhiteListOnUpload ? "White" : "None",
         TimeStamp: time,
         Label: "None",
         Directory: normalizedFolder === '' ? '' : normalizedFolder + '/',

@@ -8,6 +8,7 @@ import { getDatabase } from '../utils/databaseAdapter.js';
 export async function handleChunkMerge(context) {
     const { request, env, url, waitUntil } = context;
     const db = getDatabase(env);
+    const autoWhiteListOnUpload = context.securityConfig?.access?.autoWhiteListOnUpload === true;
 
     // 解析表单数据
     const formdata = await request.formData();
@@ -150,7 +151,7 @@ async function handleChannelBasedMerge(context, uploadId, totalChunks, originalF
             FileSize: '0', // 会在最终合并后更新
             UploadIP: uploadIp,
             UploadAddress: await getIPAddress(uploadIp),
-            ListType: "None",
+            ListType: autoWhiteListOnUpload ? "White" : "None",
             TimeStamp: Date.now(),
             Label: "None",
             Directory: normalizedFolder === '' ? '' : normalizedFolder + '/',
